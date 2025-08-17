@@ -53,28 +53,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
           
-          # 下载并编译 libpcap
-          wget https://www.tcpdump.org/release/libpcap-1.10.5.tar.xz
-          tar -xf libpcap-1.10.5.tar.xz
-          cd libpcap-1.10.5
-          
-          # 交叉编译 libpcap
-          CC=aarch64-linux-gnu-gcc \
-          AR=aarch64-linux-gnu-ar \
-          RANLIB=aarch64-linux-gnu-ranlib \
-          ./configure \
-          --host=aarch64-linux-gnu \
-          --prefix=$PWD/../libpcap-arm64 \
-          --disable-shared \
-          --enable-static \
-          --without-libnl
-          
-          make
-          make install
-          
-          # 设置环境变量
-          echo "PCAP_PATH=$PWD/../libpcap-arm64" >> $GITHUB_ENV
-          cd ..
+          sudo dpkg --add-architecture arm64
+
+          sudo apt-get install libpcap-dev:arm64
 
       - name: Install system dependencies (macOS)
         if: runner.os == 'macOS'
@@ -96,14 +77,6 @@ jobs:
           VERSION=$(cat VERSION)
           COMMIT=$(git rev-parse HEAD)
           BUILD_DATE=$(date -u '+%Y-%m-%d_%H:%M:%S')
-          
-          # 设置交叉编译环境变量
-          if [ "${{ matrix.goos }}" = "linux" ] && [ "${{ matrix.goarch }}" = "arm64" ]; then
-            export CC=aarch64-linux-gnu-gcc
-            export CXX=aarch64-linux-gnu-g++
-            export CGO_CFLAGS="-I${PCAP_PATH}/include"
-            export CGO_LDFLAGS="-L${PCAP_PATH}/lib -lpcap"
-          fi
           
           # 构建二进制文件，输出名称为 packetd
           CGO_ENABLED=${{ matrix.cgo }} GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
